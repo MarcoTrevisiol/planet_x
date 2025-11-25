@@ -44,6 +44,8 @@ defmodule PlanetX do
     if object != "X", do: object, else: "-"
   end
 
+  def answer(sky, {:sector, [sector]}), do: sky |> Map.get(sector, "-")
+
   @impl true
   def serialize(sky) do
     @sectors
