@@ -26,7 +26,7 @@ defmodule PlanetX do
   end
 
   @impl true
-  def query_types(), do: [:scan]
+  def query_types(), do: [:scan, :target, :is?]
 
   @impl true
   def answer(sky, {:scan, [object, from, to]}) do
@@ -42,6 +42,10 @@ defmodule PlanetX do
   def answer(sky, {:target, [sector]}) do
     object = sky |> Map.get(sector, "-")
     if object != "X", do: object, else: "-"
+  end
+
+  def answer(sky, {:is?, [sector, object]}) do
+    object == sky |> Map.get(sector, "-")
   end
 
   def answer(sky, {:sector, [sector]}), do: sky |> Map.get(sector, "-")
