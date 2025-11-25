@@ -14,4 +14,8 @@ defmodule Domain do
 
   # Given a configuration and a query, compute the output.
   @callback answer(config(), query()) :: output()
+
+  # Persistence
+  @callback serialize(config()) :: binary()
+  @callback deserialize(binary()) :: {:ok, config()} | :invalid_config_error
 end

@@ -37,6 +37,47 @@ defmodule Engine do
     }
   end
 
+  # --- persistence helpers ---
+
+  @spec dump(t()) :: [binary()]
+  def dump(%__MODULE__{domain: domain, active_configs: configs}) do
+    Stream.map(configs, &domain.serialize/1)
+    |> Enum.intersperse("\n")
+  end
+
+  @spec load(module(), binary()) :: {:ok, t()} | {:invalid_config_errors, [binary()]}
+  def load(domain_mod, serialized_binary) do
+    serialized_list = String.split(serialized_binary, "\n")
+
+    {oks, errors} =
+      serialized_list
+      |> Enum.reduce({[], []}, fn bin, {ok_acc, err_acc} ->
+        case domain_mod.deserialize(bin) do
+          {:ok, cfg} ->
+            {[cfg | ok_acc], err_acc}
+
+          :invalid_config_error ->
+            {ok_acc, [bin | err_acc]}
+        end
+      end)
+
+    case errors do
+      [] ->
+        full = Enum.reverse(oks)
+
+        {:ok,
+         %__MODULE__{
+           domain: domain_mod,
+           full_configs: full,
+           active_configs: full,
+           facts: []
+         }}
+
+      _ ->
+        {:invalid_config_errors, Enum.reverse(errors)}
+    end
+  end
+
   # --- facts management ---
 
   @spec add_fact(t(), fact()) :: t()
@@ -106,4 +147,3 @@ defmodule Engine do
     |> Enum.sum()
   end
 end
-

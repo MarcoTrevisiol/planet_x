@@ -13,6 +13,20 @@ defmodule TestDomain do
   def answer(config, {:is?, [param]}) do
     config == param
   end
+
+  # --- persistence ---
+  @impl true
+  def serialize(config) when is_integer(config) do
+    Integer.to_string(config)
+  end
+
+  @impl true
+  def deserialize(bin) when is_binary(bin) do
+    case Integer.parse(bin) do
+      {int, ""} when int in 0..3 -> {:ok, int}
+      _ -> :invalid_config_error
+    end
+  end
 end
 
 defmodule EngineTest do
@@ -41,13 +55,24 @@ defmodule EngineTest do
   end
 
   test "entropy works as expected" do
-    engine = TestDomain |> Engine.new()
-    |> Engine.add_fact({{:is?, [0]}, false})
-    |> Engine.add_fact({{:is?, [1]}, false})
+    engine =
+      TestDomain
+      |> Engine.new()
+      |> Engine.add_fact({{:is?, [0]}, false})
+      |> Engine.add_fact({{:is?, [1]}, false})
 
     # after those two facts, only 2 and 3 are possible
     # therefore, a non-trivial query gets exactly 1 bit of information
     assert Engine.entropy(engine, {:is?, [2]}) == 1.0
   end
-end
 
+  test "serialization - deserialization property" do
+    engine = Engine.new(TestDomain) |> Engine.add_fact({{:is?, [0]}, false})
+
+    serialized = engine |> Engine.dump() |> IO.iodata_to_binary()
+    assert serialized == "1\n2\n3"
+
+    {:ok, %{full_configs: deserialized}} = Engine.load(TestDomain, serialized)
+    assert deserialized == [1, 2, 3]
+  end
+end
