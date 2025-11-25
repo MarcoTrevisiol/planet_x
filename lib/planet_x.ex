@@ -3,16 +3,16 @@ defmodule PlanetX do
   Documentation for `PlanetX`.
   """
 
-  @doc """
-  Hello world.
+  @behaviour Domain
+  @impl true
+  def all_configurations() do
+  end
 
-  ## Examples
+  @impl true
+  def query_types(), do: [:scan]
 
-      iex> PlanetX.hello()
-      :world
-
-  """
-  def hello do
-    :world
+  @impl true
+  def answer(config, {:scan, [type, from, to]}) do
+    0
   end
 end
