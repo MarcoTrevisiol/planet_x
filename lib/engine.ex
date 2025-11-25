@@ -88,7 +88,7 @@ defmodule Engine do
 
   @spec distribution(t(), query()) :: dist()
   def distribution(%__MODULE__{} = st, query) do
-    freq = frequencies(st, query)
+    freqs = frequencies(st, query)
     count = freqs |> Map.values() |> Enum.sum()
 
     freqs
@@ -98,10 +98,10 @@ defmodule Engine do
 
   @spec entropy(t(), query()) :: float()
   def entropy(%__MODULE__{} = st, query) do
-    freq = frequencies(st, query)
+    freqs = frequencies(st, query)
     count = freqs |> Map.values() |> Enum.sum()
 
-    freq
+    freqs
     |> Enum.map(fn {_key, c} -> if c <= 0, do: 0, else: -c / count * :math.log2(c / count) end)
     |> Enum.sum()
   end

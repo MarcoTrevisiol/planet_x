@@ -12,7 +12,7 @@ defmodule PlanetX do
   def query_types(), do: [:scan]
 
   @impl true
-  def answer(config, {:scan, [type, from, to]}) do
+  def answer(_config, {:scan, [_type, _from, _to]}) do
     0
   end
 end
