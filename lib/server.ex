@@ -18,8 +18,8 @@ defmodule Server do
 
   The file is expected to contain a term: a list of serialized configs (binaries).
   """
-  def load(domain_mod, filename) do
-    GenServer.call(__MODULE__, {:load, domain_mod, filename})
+  def load(domain_mod) do
+    GenServer.call(__MODULE__, {:load, domain_mod})
   end
 
   @doc """
@@ -27,8 +27,8 @@ defmodule Server do
 
   The file will contain a term: list of binaries.
   """
-  def dump(filename) do
-    GenServer.call(__MODULE__, {:dump, filename}, @timeout)
+  def dump() do
+    GenServer.call(__MODULE__, :dump, @timeout)
   end
 
   @doc """
@@ -67,7 +67,8 @@ defmodule Server do
   end
 
   @impl true
-  def handle_call({:load, domain_mod, filename}, _from, state) do
+  def handle_call({:load, domain_mod}, _from, state) do
+    filename = Atom.to_string(domain_mod)
     case File.read(filename) do
       {:ok, content} ->
         case Engine.load(domain_mod, content) do
@@ -87,13 +88,14 @@ defmodule Server do
     {:reply, :ok, Engine.new(domain_mod)}
   end
 
-  def handle_call({:dump, _filename}, _from, nil = state) do
+  def handle_call(:dump, _from, nil = state) do
     {:reply, {:error, :no_engine_loaded}, state}
   end
 
-  def handle_call({:dump, filename}, _from, engine = state) do
+  def handle_call(:dump, _from, engine = state) do
     serialized = Engine.dump(engine)
 
+    filename = Atom.to_string(engine.domain)
     reply = File.write(filename, serialized)
     {:reply, reply, state}
   end
