@@ -25,4 +25,10 @@ defmodule PlanetXTest do
     assert PlanetX.answer(sky, {:dist, [:max, "G", :max, "G", 2]})
     assert not PlanetX.answer(sky, {:dist, [:max, "G", :max, "G", 1]})
   end
+
+  test "wierd distance" do
+    {:ok, sky} = PlanetX.deserialize("ACAADD--DD-XCG--GA")
+
+    assert PlanetX.answer(sky, {:dist, [:max, "A", :max, "A", 15]})
+  end
 end

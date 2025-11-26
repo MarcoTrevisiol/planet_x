@@ -46,6 +46,13 @@ defmodule Server do
   end
 
   @doc """
+  Ask for total number of active configurations
+  """
+  def query() do
+    GenServer.call(__MODULE__, :query, @timeout)
+  end
+
+  @doc """
   Run a query against the current engine.
 
   Returns %{distribution: map, entropy: float}.
@@ -142,6 +149,15 @@ defmodule Server do
     filename = Atom.to_string(engine.domain) <> ".facts"
     File.write!(filename, facts)
     {:reply, :ok, updated}
+  end
+
+  def handle_call(:query, _from, nil = state) do
+    {:reply, {:error, :no_engine_loaded}, state}
+  end
+
+  def handle_call(:query, _from, engine = state) do
+    result = engine.active_configs |> Enum.count
+    {:reply, result, state}
   end
 
   def handle_call({:query, _query}, _from, nil = state) do

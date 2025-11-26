@@ -88,8 +88,8 @@ defmodule PlanetX do
   end
 
   defp distance(from, to) do
-    l_dist = abs(from - to)
-    r_dist = abs(18 - from + to)
+    l_dist = (from - to + 18) |> rem(18)
+    r_dist = (to - from + 18) |> rem(18)
     min(l_dist, r_dist)
   end
 

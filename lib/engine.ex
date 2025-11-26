@@ -47,7 +47,7 @@ defmodule Engine do
 
   @spec load(module(), binary()) :: {:ok, t()} | {:invalid_config_errors, [binary()]}
   def load(domain_mod, serialized_binary) do
-    serialized_list = String.split(serialized_binary, "\n")
+    serialized_list = String.split(serialized_binary, "\n") |> Enum.reject(fn l -> l == "" end)
 
     {oks, errors} =
       serialized_list
