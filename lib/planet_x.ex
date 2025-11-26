@@ -47,21 +47,22 @@ defmodule PlanetX do
     object == sky |> Map.get(sector, "-")
   end
 
+  def answer(sky, {:dist, [min_max_from, from_object, min_max_to, to_object, dist]}) do
+    from_sectors = sectors_of(sky, from_object)
+    to_sectors = sectors_of(sky, to_object)
+
+    min_or_max(min_max_from).(
+      from_sectors
+      |> Enum.map(fn fs ->
+        min_or_max(min_max_to).(to_sectors |> Enum.map(fn ts -> distance(fs, ts) end))
+      end)
+    ) <= dist
+  end
+
   def answer(sky, {:sector, [sector]}), do: sky |> Map.get(sector, "-")
 
   def answer(sky, {:object, [object]}) do
     sectors_of(sky, object)
-  end
-
-  def distance(sky, from_object, to_object) do
-    from_sectors = sectors_of(sky, from_object)
-    to_sectors = sectors_of(sky, to_object)
-
-    for i <- from_sectors,
-        j <- to_sectors do
-      distance(i, j)
-    end
-    |> Enum.into(%MapSet{})
   end
 
   defp sectors_of(sky, object) do
@@ -76,6 +77,9 @@ defmodule PlanetX do
     r_dist = abs(18 - from + to)
     min(l_dist, r_dist)
   end
+
+  defp min_or_max(:min), do: &Enum.min/1
+  defp min_or_max(:max), do: &Enum.max/1
 
   @impl true
   def serialize(sky) do

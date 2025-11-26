@@ -12,6 +12,17 @@ defmodule PlanetXTest do
   test "distance works" do
     {:ok, sky} = PlanetX.deserialize(@sky)
 
-    assert PlanetX.distance(sky, "X", "A") == MapSet.new([1, 2, 8, 9])
+    assert PlanetX.answer(sky, {:dist, [:min, "A", :min, "D", 1]})
+    assert PlanetX.answer(sky, {:dist, [:max, "A", :min, "D", 2]})
+    assert PlanetX.answer(sky, {:dist, [:min, "A", :max, "D", 6]})
+    assert PlanetX.answer(sky, {:dist, [:max, "A", :max, "D", 7]})
+
+    assert not PlanetX.answer(sky, {:dist, [:min, "A", :min, "D", 0]})
+    assert not PlanetX.answer(sky, {:dist, [:max, "A", :min, "D", 1]})
+    assert not PlanetX.answer(sky, {:dist, [:min, "A", :max, "D", 5]})
+    assert not PlanetX.answer(sky, {:dist, [:max, "A", :max, "D", 6]})
+
+    assert PlanetX.answer(sky, {:dist, [:max, "G", :max, "G", 2]})
+    assert not PlanetX.answer(sky, {:dist, [:max, "G", :max, "G", 1]})
   end
 end
