@@ -50,6 +50,13 @@ defmodule PlanetX do
 
   def answer(sky, {:sector, [sector]}), do: sky |> Map.get(sector, "-")
 
+  def answer(sky, {:object, [object]}) do
+    sky
+    |> Enum.filter(fn {_key, val} -> val == object end)
+    |> Enum.map(fn {key, _val} -> key end)
+    |> Enum.sort
+  end
+
   @impl true
   def serialize(sky) do
     @sectors
@@ -62,7 +69,7 @@ defmodule PlanetX do
     sky = binary
     |> String.codepoints
     |> Enum.with_index
-    |> Enum.map(fn {c, i} -> {i, c} end)
+    |> Enum.map(fn {c, i} -> {i+1, c} end)
     |> Enum.into(%{})
 
     {:ok, sky}
