@@ -50,10 +50,31 @@ defmodule PlanetX do
   def answer(sky, {:sector, [sector]}), do: sky |> Map.get(sector, "-")
 
   def answer(sky, {:object, [object]}) do
+    sectors_of(sky, object)
+  end
+
+  def distance(sky, from_object, to_object) do
+    from_sectors = sectors_of(sky, from_object)
+    to_sectors = sectors_of(sky, to_object)
+
+    for i <- from_sectors,
+        j <- to_sectors do
+      distance(i, j)
+    end
+    |> Enum.into(%MapSet{})
+  end
+
+  defp sectors_of(sky, object) do
     sky
     |> Enum.filter(fn {_key, val} -> val == object end)
     |> Enum.map(fn {key, _val} -> key end)
     |> Enum.sort()
+  end
+
+  defp distance(from, to) do
+    l_dist = abs(from - to)
+    r_dist = abs(18 - from + to)
+    min(l_dist, r_dist)
   end
 
   @impl true

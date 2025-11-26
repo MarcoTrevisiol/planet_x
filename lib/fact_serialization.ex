@@ -41,7 +41,7 @@ defmodule FactSerialization do
        do: true
 
   defp only_literals?([]), do: true
-  defp only_literals?([head|tail]), do: only_literals?(head) and only_literals?(tail)
+  defp only_literals?([head | tail]), do: only_literals?(head) and only_literals?(tail)
 
   defp only_literals?({a, b}), do: only_literals?(a) and only_literals?(b)
   defp only_literals?({:{}, _, content}), do: only_literals?(content)

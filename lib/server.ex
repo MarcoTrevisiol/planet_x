@@ -100,6 +100,7 @@ defmodule Server do
         facts = FactSerialization.deserialize!(content)
         engine = Engine.new(domain_mod) |> Engine.set_facts(facts)
         {:reply, :ok, engine}
+
       {:error, reason} ->
         {:reply, {:error, {:file_error, reason}}, state}
     end
@@ -127,7 +128,7 @@ defmodule Server do
 
   def handle_call({:add, query, result}, _from, engine) do
     updated = Engine.add_fact(engine, {query, result})
-    facts = updated.facts |> FactSerialization.serialize
+    facts = updated.facts |> FactSerialization.serialize()
     filename = Atom.to_string(engine.domain) <> ".facts"
     File.write!(filename, facts)
     {:reply, :ok, updated}
