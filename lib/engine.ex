@@ -105,6 +105,14 @@ defmodule Engine do
 
   # --- queries: distributions and entropy ---
 
+  def query(query, state) do
+    freqs = frequencies(state, query)
+    dist = distribution_(freqs)
+    entropy = entropy_(freqs)
+
+    %{query: query, distribution: dist, entropy: entropy}
+  end
+
   defp frequencies(%__MODULE__{domain: domain, active_configs: configs}, query) do
     configs
     |> Stream.map(&domain.answer(&1, query))
@@ -113,7 +121,11 @@ defmodule Engine do
 
   @spec distribution(t(), query()) :: dist()
   def distribution(%__MODULE__{} = st, query) do
-    freqs = frequencies(st, query)
+    frequencies(st, query)
+    |> distribution_
+  end
+
+  defp distribution_(freqs) do
     count = freqs |> Map.values() |> Enum.sum()
 
     freqs
@@ -123,7 +135,11 @@ defmodule Engine do
 
   @spec entropy(t(), query()) :: float()
   def entropy(%__MODULE__{} = st, query) do
-    freqs = frequencies(st, query)
+    frequencies(st, query)
+    |> entropy_
+  end
+
+  defp entropy_(freqs) do
     count = freqs |> Map.values() |> Enum.sum()
 
     freqs

@@ -18,13 +18,28 @@ defmodule PlanetX do
 
   @sectors 1..18
 
+  def query_all_sectors(), do: @sectors |> Enum.map(fn s -> {:sector, [s]} end)
+
+  def query_all_scans(from, object) do
+    to = add(from, 8)
+
+    interval =
+      if to >= from,
+        do: from..to,
+        else: Stream.concat(from..18, 1..to)
+
+    interval
+    |> PlanetX.Utils.pairs()
+    |> Enum.map(fn [l, r] -> {:scan, [object, l, r]} end)
+  end
+
   @impl true
   def all_configurations() do
     generate()
   end
 
   @impl true
-  def query_types(), do: [:scan, :target, :is?]
+  def query_types(), do: [:scan, :target, :is?, :dist]
 
   @impl true
   def answer(sky, {:scan, [object, from, to]}) do

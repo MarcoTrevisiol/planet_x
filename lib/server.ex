@@ -26,7 +26,7 @@ defmodule Server do
   Load engine state from a list of facts
   """
   def load_facts(domain_mod) do
-    GenServer.call(__MODULE__, {:load_facts, domain_mod})
+    GenServer.call(__MODULE__, {:load_facts, domain_mod}, @timeout)
   end
 
   @doc """
@@ -52,6 +52,15 @@ defmodule Server do
   """
   def query(query) do
     GenServer.call(__MODULE__, {:query, query}, @timeout)
+  end
+
+  @doc """
+  Run all queries against the current engine.
+
+  Returns the results as of single query, but sorted by entropy.
+  """
+  def query_all(queries, by \\ :query, limit \\ 5) do
+    GenServer.call(__MODULE__, {:query_all, queries, by, limit}, @timeout * 10)
   end
 
   @doc """
@@ -94,6 +103,7 @@ defmodule Server do
 
   def handle_call({:load_facts, domain_mod}, _from, state) do
     filename = Atom.to_string(domain_mod) <> ".facts"
+    _query_types = domain_mod.query_types()
 
     case File.read(filename) do
       {:ok, content} ->
@@ -139,9 +149,28 @@ defmodule Server do
   end
 
   def handle_call({:query, query}, _from, engine = state) do
-    dist = Engine.distribution(engine, query)
-    entropy = Engine.entropy(engine, query)
-    {:reply, %{distribution: dist, entropy: entropy}, state}
+    result = Engine.query(query, engine)
+    {:reply, result |> Map.delete(:query), state}
+  end
+
+  def handle_call({:query_all, _queries, _by, _limit}, _from, nil = state) do
+    {:reply, {:error, :no_engine_loaded}, state}
+  end
+
+  def handle_call({:query_all, queries, by, limit}, _from, engine = state) do
+    result =
+      queries
+      |> Task.async_stream(Engine, :query, [engine], timeout: @timeout)
+      |> Enum.flat_map(fn
+        {:ok, r} -> [r]
+        _ -> []
+      end)
+      |> Enum.reject(fn r -> select(r, by) == nil end)
+      |> Enum.sort_by(&select(&1, by), :desc)
+      |> Enum.take(limit)
+      |> Enum.reverse()
+
+    {:reply, result, state}
   end
 
   def handle_call(:facts, _from, nil = state) do
@@ -151,4 +180,8 @@ defmodule Server do
   def handle_call(:facts, _from, engine) do
     {:reply, engine.facts, engine}
   end
+
+  defp select(elem, []), do: elem
+  defp select(%{} = elem, [h | t]), do: elem |> Map.get(h) |> select(t)
+  defp select(_elem, _by), do: nil
 end
