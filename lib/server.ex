@@ -23,6 +23,13 @@ defmodule Server do
   end
 
   @doc """
+  Load engine state from a list of facts
+  """
+  def load_facts(domain_mod) do
+    GenServer.call(__MODULE__, {:load_facts, domain_mod})
+  end
+
+  @doc """
   Dump current active configs to file.
 
   The file will contain a term: list of binaries.
@@ -68,7 +75,8 @@ defmodule Server do
 
   @impl true
   def handle_call({:load, domain_mod}, _from, state) do
-    filename = Atom.to_string(domain_mod)
+    filename = Atom.to_string(domain_mod) <> ".configurations"
+
     case File.read(filename) do
       {:ok, content} ->
         case Engine.load(domain_mod, content) do
@@ -79,6 +87,19 @@ defmodule Server do
             {:reply, {:error, error}, state}
         end
 
+      {:error, reason} ->
+        {:reply, {:error, {:file_error, reason}}, state}
+    end
+  end
+
+  def handle_call({:load_facts, domain_mod}, _from, state) do
+    filename = Atom.to_string(domain_mod) <> ".facts"
+
+    case File.read(filename) do
+      {:ok, content} ->
+        facts = FactSerialization.deserialize!(content)
+        engine = Engine.new(domain_mod) |> Engine.set_facts(facts)
+        {:reply, :ok, engine}
       {:error, reason} ->
         {:reply, {:error, {:file_error, reason}}, state}
     end
@@ -95,7 +116,7 @@ defmodule Server do
   def handle_call(:dump, _from, engine = state) do
     serialized = Engine.dump(engine)
 
-    filename = Atom.to_string(engine.domain)
+    filename = Atom.to_string(engine.domain) <> ".configurations"
     reply = File.write(filename, serialized)
     {:reply, reply, state}
   end
@@ -106,6 +127,9 @@ defmodule Server do
 
   def handle_call({:add, query, result}, _from, engine) do
     updated = Engine.add_fact(engine, {query, result})
+    facts = updated.facts |> FactSerialization.serialize
+    filename = Atom.to_string(engine.domain) <> ".facts"
+    File.write!(filename, facts)
     {:reply, :ok, updated}
   end
 
@@ -127,4 +151,3 @@ defmodule Server do
     {:reply, engine.facts, engine}
   end
 end
-

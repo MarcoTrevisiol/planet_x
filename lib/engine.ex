@@ -84,7 +84,10 @@ defmodule Engine do
   def facts(%__MODULE__{facts: facts}), do: facts
 
   @spec add_fact(t(), fact()) :: t()
-  def add_fact(%__MODULE__{domain: domain, active_configs: active, facts: facts} = st, {query, observed} = fact) do
+  def add_fact(
+        %__MODULE__{domain: domain, active_configs: active, facts: facts} = st,
+        {query, observed} = fact
+      ) do
     updated_cfgs =
       active
       |> Enum.filter(fn cfg -> domain.answer(cfg, query) == observed end)
