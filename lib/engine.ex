@@ -80,43 +80,24 @@ defmodule Engine do
 
   # --- facts management ---
 
-  @spec add_fact(t(), fact()) :: t()
-  def add_fact(%__MODULE__{} = st, {query, observed}) do
-    facts = st.facts ++ [{query, observed}]
-    recompute(st, facts)
-  end
-
-  @spec replace_fact(t(), non_neg_integer(), fact()) :: t()
-  def replace_fact(%__MODULE__{} = st, idx, new_fact) do
-    facts =
-      st.facts
-      |> List.replace_at(idx, new_fact)
-
-    recompute(st, facts)
-  end
-
-  @spec remove_fact(t(), non_neg_integer()) :: t()
-  def remove_fact(%__MODULE__{} = st, idx) do
-    facts = List.delete_at(st.facts, idx)
-    recompute(st, facts)
-  end
-
   @spec facts(t()) :: [fact()]
   def facts(%__MODULE__{facts: facts}), do: facts
 
-  # Recompute active_configs from full_configs given a list of facts.
-  @spec recompute(t(), [fact()]) :: t()
-  defp recompute(%__MODULE__{domain: domain, full_configs: full} = st, facts) do
-    active =
-      full
-      |> Enum.filter(fn cfg ->
-        facts
-        |> Enum.all?(fn {query, observed} ->
-          domain.answer(cfg, query) == observed
-        end)
-      end)
+  @spec add_fact(t(), fact()) :: t()
+  def add_fact(%__MODULE__{domain: domain, active_configs: active, facts: facts} = st, {query, observed} = fact) do
+    updated_cfgs =
+      active
+      |> Enum.filter(fn cfg -> domain.answer(cfg, query) == observed end)
 
-    %__MODULE__{st | active_configs: active, facts: facts}
+    updated_facts = facts ++ [fact]
+
+    %__MODULE__{st | active_configs: updated_cfgs, facts: updated_facts}
+  end
+
+  @spec set_facts(t(), [fact()]) :: t()
+  def set_facts(state, facts) do
+    facts
+    |> Enum.reduce(state, fn fact, acc -> add_fact(acc, fact) end)
   end
 
   # --- queries: distributions and entropy ---
