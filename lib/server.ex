@@ -19,14 +19,14 @@ defmodule Server do
   The file is expected to contain a term: a list of serialized configs (binaries).
   """
   def load(domain_mod) do
-    GenServer.call(__MODULE__, {:load, domain_mod})
+    GenServer.cast(__MODULE__, {:load, domain_mod})
   end
 
   @doc """
   Load engine state from a list of facts
   """
   def load_facts(domain_mod) do
-    GenServer.call(__MODULE__, {:load_facts, domain_mod}, @timeout)
+    GenServer.cast(__MODULE__, {:load_facts, domain_mod})
   end
 
   @doc """
@@ -35,14 +35,14 @@ defmodule Server do
   The file will contain a term: list of binaries.
   """
   def dump() do
-    GenServer.call(__MODULE__, :dump, @timeout)
+    GenServer.cast(__MODULE__, :dump)
   end
 
   @doc """
   Add a fact (query, result) to the engine.
   """
   def add(query, result) do
-    GenServer.call(__MODULE__, {:add, query, result}, @timeout)
+    GenServer.cast(__MODULE__, {:add, query, result})
   end
 
   @doc """
@@ -66,7 +66,7 @@ defmodule Server do
 
   Returns the results as of single query, but sorted by entropy.
   """
-  def query_all(queries, by \\ :query, limit \\ 5) do
+  def query_all(queries, by \\ [:query], limit \\ 5) do
     GenServer.call(__MODULE__, {:query_all, queries, by, limit}, @timeout * 10)
   end
 
@@ -90,25 +90,25 @@ defmodule Server do
   end
 
   @impl true
-  def handle_call({:load, domain_mod}, _from, state) do
+  def handle_cast({:load, domain_mod}, state) do
     filename = domain_mod |> configurations_filename
 
     case File.read(filename) do
       {:ok, content} ->
         case Engine.load(domain_mod, content) do
           {:ok, engine} ->
-            {:reply, :ok, engine}
+            {:noreply, engine}
 
           error ->
-            {:reply, {:error, error}, state}
+            {:stop, {:error, error}, state}
         end
 
       {:error, reason} ->
-        {:reply, {:error, {:file_error, reason}}, state}
+        {:stop, {:error, {:file_error, reason}}, state}
     end
   end
 
-  def handle_call({:load_facts, domain_mod}, _from, state) do
+  def handle_cast({:load_facts, domain_mod}, state) do
     filename = domain_mod |> facts_filename
     _query_types = domain_mod.query_types()
 
@@ -116,39 +116,40 @@ defmodule Server do
       {:ok, content} ->
         facts = FactSerialization.deserialize!(content)
         engine = Engine.new(domain_mod) |> Engine.set_facts(facts)
-        {:reply, :ok, engine}
+        {:noreply, engine}
 
       {:error, reason} ->
-        {:reply, {:error, {:file_error, reason}}, state}
+        {:stop, {:error, {:file_error, reason}}, state}
     end
   end
 
-  def handle_call({:new, domain_mod}, _from, _state) do
-    {:reply, :ok, Engine.new(domain_mod)}
+  def handle_cast(:dump, nil = state) do
+    {:stop, {:error, :no_engine_loaded}, state}
   end
 
-  def handle_call(:dump, _from, nil = state) do
-    {:reply, {:error, :no_engine_loaded}, state}
-  end
-
-  def handle_call(:dump, _from, engine = state) do
+  def handle_cast(:dump, engine = state) do
     serialized = Engine.dump(engine)
 
     filename = engine.domain |> configurations_filename
-    reply = File.write(filename, serialized)
-    {:reply, reply, state}
+    File.write(filename, serialized)
+    {:noreply, state}
   end
 
-  def handle_call({:add, _query, _result}, _from, nil = state) do
-    {:reply, {:error, :no_engine_loaded}, state}
+  def handle_cast({:add, _query, _result}, nil = state) do
+    {:stop, {:error, :no_engine_loaded}, state}
   end
 
-  def handle_call({:add, query, result}, _from, engine) do
+  def handle_cast({:add, query, result}, engine) do
     updated = Engine.add_fact(engine, {query, result})
     facts = updated.facts |> FactSerialization.serialize()
     filename = engine.domain |> facts_filename
     File.write!(filename, facts)
-    {:reply, :ok, updated}
+    {:noreply, updated}
+  end
+
+  @impl true
+  def handle_call({:new, domain_mod}, _from, _state) do
+    {:reply, :ok, Engine.new(domain_mod)}
   end
 
   def handle_call(:query, _from, nil = state) do
