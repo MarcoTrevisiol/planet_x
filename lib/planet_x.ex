@@ -18,7 +18,7 @@ defmodule PlanetX do
 
   @sectors 1..18
 
-  def query_all_sectors(), do: @sectors |> Enum.map(fn s -> {:sector, [s]} end)
+  def query_all_sectors(), do: @sectors |> Enum.map(fn s -> [:sector, s] end)
 
   def query_all_scans(from, object) do
     to = add(from, 8)
@@ -30,7 +30,12 @@ defmodule PlanetX do
 
     interval
     |> PlanetX.Utils.pairs()
-    |> Enum.map(fn [l, r] -> {:scan, [object, l, r]} end)
+    |> Enum.map(fn [l, r] -> [:scan, object, l, r] end)
+  end
+
+  def query_all_scans(from) do
+    ["A", "D", "G", "C"]
+    |> Enum.flat_map(&query_all_scans(from, &1))
   end
 
   @impl true
@@ -42,7 +47,7 @@ defmodule PlanetX do
   def query_types(), do: [:scan, :target, :is?, :dist]
 
   @impl true
-  def answer(sky, {:scan, [object, from, to]}) do
+  def answer(sky, [:scan, object, from, to]) do
     interval =
       if to >= from,
         do: from..to,
@@ -53,16 +58,16 @@ defmodule PlanetX do
     |> Enum.count()
   end
 
-  def answer(sky, {:target, [sector]}) do
+  def answer(sky, [:target, sector]) do
     object = sky |> Map.get(sector, "-")
     if object != "X", do: object, else: "-"
   end
 
-  def answer(sky, {:is?, [sector, object]}) do
+  def answer(sky, [:is?, sector, object]) do
     object == sky |> Map.get(sector, "-")
   end
 
-  def answer(sky, {:dist, [min_max_from, from_object, min_max_to, to_object, dist]}) do
+  def answer(sky, [:dist, min_max_from, from_object, min_max_to, to_object, dist]) do
     from_sectors = sectors_of(sky, from_object)
     to_sectors = sectors_of(sky, to_object)
 
@@ -74,9 +79,9 @@ defmodule PlanetX do
     ) <= dist
   end
 
-  def answer(sky, {:sector, [sector]}), do: sky |> Map.get(sector, "-")
+  def answer(sky, [:sector, sector]), do: sky |> Map.get(sector, "-")
 
-  def answer(sky, {:object, [object]}) do
+  def answer(sky, [:object, object]) do
     sectors_of(sky, object)
   end
 

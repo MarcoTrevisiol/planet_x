@@ -10,7 +10,7 @@ defmodule TestDomain do
   def query_types(), do: [:is?]
 
   @impl true
-  def answer(config, {:is?, [param]}) do
+  def answer(config, [:is?, param]) do
     config == param
   end
 
@@ -44,12 +44,12 @@ defmodule EngineTest do
   end
 
   test "after a fact, possible configurations are reduced" do
-    engine = Engine.new(TestDomain) |> Engine.add_fact({{:is?, [0]}, false})
+    engine = Engine.new(TestDomain) |> Engine.add_fact({[:is?, 0], false})
 
     assert length(engine.active_configs) == 3
     refute 0 in engine.active_configs
 
-    updated_engine = engine |> Engine.add_fact({{:is?, [1]}, true})
+    updated_engine = engine |> Engine.add_fact({[:is?, 1], true})
 
     assert updated_engine.active_configs == [1]
   end
@@ -58,16 +58,16 @@ defmodule EngineTest do
     engine =
       TestDomain
       |> Engine.new()
-      |> Engine.add_fact({{:is?, [0]}, false})
-      |> Engine.add_fact({{:is?, [1]}, false})
+      |> Engine.add_fact({[:is?, 0], false})
+      |> Engine.add_fact({[:is?, 1], false})
 
     # after those two facts, only 2 and 3 are possible
     # therefore, a non-trivial query gets exactly 1 bit of information
-    assert Engine.entropy(engine, {:is?, [2]}) == 1.0
+    assert Engine.entropy(engine, [:is?, 2]) == 1.0
   end
 
   test "serialization - deserialization property" do
-    engine = Engine.new(TestDomain) |> Engine.add_fact({{:is?, [0]}, false})
+    engine = Engine.new(TestDomain) |> Engine.add_fact({[:is?, 0], false})
 
     serialized = engine |> Engine.dump() |> IO.iodata_to_binary()
     assert serialized == "1\n2\n3"

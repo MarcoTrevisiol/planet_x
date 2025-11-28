@@ -156,7 +156,7 @@ defmodule Server do
   end
 
   def handle_call(:query, _from, engine = state) do
-    result = engine.active_configs |> Enum.count
+    result = engine.active_configs |> Enum.count()
     {:reply, result, state}
   end
 
@@ -201,7 +201,9 @@ defmodule Server do
   defp select(%{} = elem, [h | t]), do: elem |> Map.get(h) |> select(t)
   defp select(_elem, _by), do: nil
 
-  defp module_name(domain_mod), do: domain_mod |> Atom.to_string |> String.replace_prefix("Elixir.", "")
+  defp module_name(domain_mod),
+    do: domain_mod |> Atom.to_string() |> String.replace_prefix("Elixir.", "")
+
   defp facts_filename(domain_mod), do: "#{module_name(domain_mod)}.facts"
   defp configurations_filename(domain_mod), do: "#{module_name(domain_mod)}.configurations"
 end

@@ -6,7 +6,7 @@ defmodule Domain do
   @type config :: term()
   @type query_type :: atom()
   @type query_param :: term()
-  @type query :: {query_type(), [query_param()]}
+  @type query :: [query_type() | [query_param()]]
   @type output :: non_neg_integer()
 
   @callback all_configurations() :: [config()]
