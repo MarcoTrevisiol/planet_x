@@ -91,7 +91,7 @@ defmodule Server do
 
   @impl true
   def handle_call({:load, domain_mod}, _from, state) do
-    filename = Atom.to_string(domain_mod) <> ".configurations"
+    filename = domain_mod |> configurations_filename
 
     case File.read(filename) do
       {:ok, content} ->
@@ -109,7 +109,7 @@ defmodule Server do
   end
 
   def handle_call({:load_facts, domain_mod}, _from, state) do
-    filename = Atom.to_string(domain_mod) <> ".facts"
+    filename = domain_mod |> facts_filename
     _query_types = domain_mod.query_types()
 
     case File.read(filename) do
@@ -134,7 +134,7 @@ defmodule Server do
   def handle_call(:dump, _from, engine = state) do
     serialized = Engine.dump(engine)
 
-    filename = Atom.to_string(engine.domain) <> ".configurations"
+    filename = engine.domain |> configurations_filename
     reply = File.write(filename, serialized)
     {:reply, reply, state}
   end
@@ -146,7 +146,7 @@ defmodule Server do
   def handle_call({:add, query, result}, _from, engine) do
     updated = Engine.add_fact(engine, {query, result})
     facts = updated.facts |> FactSerialization.serialize()
-    filename = Atom.to_string(engine.domain) <> ".facts"
+    filename = engine.domain |> facts_filename
     File.write!(filename, facts)
     {:reply, :ok, updated}
   end
@@ -200,4 +200,8 @@ defmodule Server do
   defp select(elem, []), do: elem
   defp select(%{} = elem, [h | t]), do: elem |> Map.get(h) |> select(t)
   defp select(_elem, _by), do: nil
+
+  defp module_name(domain_mod), do: domain_mod |> Atom.to_string |> String.replace_prefix("Elixir.", "")
+  defp facts_filename(domain_mod), do: "#{module_name(domain_mod)}.facts"
+  defp configurations_filename(domain_mod), do: "#{module_name(domain_mod)}.configurations"
 end

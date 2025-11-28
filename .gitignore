@@ -21,3 +21,8 @@ planet_x-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+
+# application specific persistence
+*.facts
+*.configurations
